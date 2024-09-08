@@ -24,14 +24,14 @@ function handleDisconnect() {
             console.error('Error getting database connection:', err);
             setTimeout(handleDisconnect, 2000);
         } else {
-            console.log('Connected to the database.');
+           
             connection.release();
         }
     });
 
     db.on('error', (err) => {
         if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-            console.log('Database connection lost. Reconnecting...');
+          
             handleDisconnect();
         } else {
             throw err;
@@ -75,9 +75,10 @@ app.post('/add-student', (req, res) => {
         familyType,
         numberOfSibling,
         siblingName,
-        siblingSchoolName,
+        SiblingSchoolName,
         siblingClass,
         sourceOfInfo,
+        referenceName,
         satisfiedWithInfo,
         preferedCallTime
     } = req.body;
@@ -90,9 +91,9 @@ app.post('/add-student', (req, res) => {
             fathersQualification, fathersEmail, fathersOccupation, fathersOrganisation, fathersDesignation,
             fathersContact, mothersName, mothersDob, mothersQualification, mothersEmail,
             mothersOccupation, mothersOrganisation, mothersDesignation, mothersContact,
-            familyType, numberOfSibling, siblingName, siblingSchoolName, siblingClass,
-            sourceOfInfo, satisfiedWithInfo, preferedCallTime
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)
+            familyType, numberOfSibling, siblingName, SiblingSchoolName, siblingClass,
+            sourceOfInfo,referenceName, satisfiedWithInfo, preferedCallTime
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)
     `;
 
     const values = [
@@ -102,8 +103,8 @@ app.post('/add-student', (req, res) => {
         fathersQualification, fathersEmail, fathersOccupation, fathersOrganisation, fathersDesignation,
         fathersContact, mothersName, mothersDob, mothersQualification, mothersEmail,
         mothersOccupation, mothersOrganisation, mothersDesignation, mothersContact,
-        familyType, numberOfSibling, siblingName, siblingSchoolName, siblingClass,
-        sourceOfInfo, satisfiedWithInfo, preferedCallTime
+        familyType, numberOfSibling, siblingName, SiblingSchoolName, siblingClass,
+        sourceOfInfo, satisfiedWithInfo, referenceName, preferedCallTime
     ];
 
     db.query(sql, values, (err, result) => {
@@ -130,19 +131,59 @@ app.get('/', (req, res) => {
 
 
 app.get('/inquiriesList', (req, res) => {
-    console.log('Fetching inquiries list...');
     const query = 'SELECT * from wp_wlsm_inquiries';
     db.query(query, (err, result) => {
         if (err) {
             console.error('Error fetching data:', err);
         }
         res.json(result);
-        console.log('fetched')
     })
 
 })
 
+app.get('/section', (req, res) => {
+    const query = 'SELECT * from wp_wlsm_sections';
+    db.query(query, (err, result) => {
+        if (err) {
+            console.error('Error fetching data:', err);
+        }
+        res.json(result);
+    })
+})
+app.get('/classes', (req, res) => {
+    const query = 'SELECT * from wp_wlsm_classes';
+    db.query(query, (err, result) => {
+        if (err) {
+            console.error('Error fetching data:', err);
+        }
+        res.json(result);
+    })
+})
+
+app.get('/search/:key', (req, res) => {
+    const searchKey = req.params.key.toLowerCase();
+    const query = `
+        SELECT * FROM wp_wlsm_student_records 
+        WHERE LOWER(name) LIKE ? OR LOWER(admission_number) LIKE ?
+    `;
+    const searchValue = `%${searchKey}%`;
+
+    db.query(query, [searchValue, searchValue], (err, results) => {
+        if (err) {
+            console.error('Error searching for student:', err);
+            return res.status(500).json({ error: 'Failed to perform search' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No students found' });
+        }
+
+        res.json(results);
+    });
+});
+
+
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
 });

@@ -24,14 +24,14 @@ function handleDisconnect() {
             console.error('Error getting database connection:', err);
             setTimeout(handleDisconnect, 2000);
         } else {
-           
+            console.log('Connected to the database.');
             connection.release();
         }
     });
 
     db.on('error', (err) => {
         if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-          
+            console.log('Database connection lost. Reconnecting...');
             handleDisconnect();
         } else {
             throw err;
@@ -131,12 +131,14 @@ app.get('/', (req, res) => {
 
 
 app.get('/inquiriesList', (req, res) => {
+    console.log('Fetching inquiries list...');
     const query = 'SELECT * from wp_wlsm_inquiries';
     db.query(query, (err, result) => {
         if (err) {
             console.error('Error fetching data:', err);
         }
         res.json(result);
+        console.log('fetched')
     })
 
 })
@@ -148,6 +150,7 @@ app.get('/section', (req, res) => {
             console.error('Error fetching data:', err);
         }
         res.json(result);
+        console.log('fetched')
     })
 })
 app.get('/classes', (req, res) => {
@@ -157,6 +160,7 @@ app.get('/classes', (req, res) => {
             console.error('Error fetching data:', err);
         }
         res.json(result);
+        console.log('fetched')
     })
 })
 
@@ -182,8 +186,24 @@ app.get('/search/:key', (req, res) => {
     });
 });
 
+app.get('/api/images', (req, res) => {
+    const query = `
+        SELECT ID as post_id, guid as image_src 
+        FROM wp_posts 
+        WHERE post_type = 'attachment';  -- Ensure that you only fetch media attachments
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error retrieving image data:', err);
+            return res.status(500).json({ message: 'Error retrieving image data' });
+        }
+        res.json(results);
+    });
+});
 
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
